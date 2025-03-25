@@ -1,40 +1,47 @@
-About us
+Okay, let's break down Support Vector Regression (SVR).
 
-AIMMO creates a large volume of training data accurately and quickly so that more industries and enterprises can utilize AI. 
-Our latest product, AIMMO Enterprise, is a web-based, self-serve data annotation platform that is packed with features just you need.
-Its intuitive UI is easy-to-use and the annotation tools are super efficient. Plus, AIMMO Enterprise comes with custom workflow designs, 
-labeler analytics, and real-time communication functions, all free of charge. We also provide a team of skilled annotators through our Annotation Workforce Service, 
-an end-to-end turnkey solution to your data needs. With AIMMO, you get an extended team of experts. Our data scientists will work closely with you
-to deliver you the right training data. Try AIMMO Enterprise at cloud.aimmo.ai Or talk to our experts at biz@aimmo.co.kr about how AIMMO can help you AIMMO Enterprise supports: 
-•Sensor Fusion Cuboids 
-•Sensor Fusion Segmentation 
-•Video Annotation 
-•Semantic Segmentation 
-•Face Landmark 
-•Natural Language Processing 
-•2D Boxes 
-•Polygons 
-•3D Cuboids 
-•Lines & Splits 
-•Skeletons 
-•Voice Recognition
-          
+**Common SVR Problem:** Predicting a continuous value where the relationship between input features and the output is potentially **non-linear**, and the data might contain **outliers** or noise that we don't want to overfit to. We also might only care about errors beyond a certain tolerance level.
 
-Website
-http://aimmo.ai 
-Industry
-Software Development
-Company size
-51-200 employees
-Headquarters
-성남시, 분당구
-Type
-Privately Held
-Founded
-2016
+**How SVR Solves This:**
 
-Data Labeling Platforms
-AIMMO’s Autonomous Driving Data as a Service (AD-DaaS) provides data collection processing services specialising in the autonomous driving sector, which accounts
-for the largest portion of the unstructured data market. AIMMO’s AD-DaaS is based on the data collected by the self-driving data collection vehicle designed by AIMMO.
-The data collection, curation, labeling, and analysis processes are performed to advance the self-driving model algorithm.
-AIMMO collaborates on various projects with automakers around the world and AD-DaaS significantly improves the quality of data supplied to support the algorithm.
+SVR (Support Vector Regression) is a supervised learning algorithm derived from Support Vector Machines (SVM) used for regression tasks (predicting continuous values). Its core idea is different from minimizing the sum of squared errors like in simple linear regression.
+
+1.  **Epsilon-Insensitive Tube:** SVR tries to find a function (often a hyperplane in a higher dimension via the kernel trick) that fits the data such that the *maximum number of data points lie within an "epsilon (ε) tube"* around the function.
+2.  **Ignoring Small Errors:** Errors *within* this tube (i.e., predictions that are within +/- ε of the actual value) are *completely ignored* by the loss function. This makes SVR robust to small amounts of noise or minor variations.
+3.  **Focus on Boundary Points (Support Vectors):** SVR primarily focuses on the points *outside* or *on the boundary* of this epsilon tube. These points are called **Support Vectors**. They are the critical data points that define the regression function and the tube's boundaries.
+4.  **Handling Non-linearity (Kernel Trick):** If the relationship isn't linear in the original feature space, SVR uses the "kernel trick" (e.g., Polynomial, Radial Basis Function - RBF kernels). This implicitly maps the data into a higher-dimensional space where a linear separation (or regression tube) might be possible, allowing it to model complex, non-linear patterns without explicitly calculating the coordinates in that high-dimensional space.
+5.  **Regularization:** SVR inherently includes regularization (controlled by a parameter often denoted as 'C') which helps prevent overfitting by balancing the flatness of the function (simplicity) against the amount by which deviations larger than ε are tolerated.
+
+**Daily Life Use Case Scenario: Predicting Commute Time**
+
+*   **Problem:** You want to predict your daily commute time to work. This depends on various factors: time of day, day of the week, weather (rain, snow), known accidents, road construction, etc. The relationship is complex and non-linear (e.g., traffic jumps significantly during rush hour, rain has a bigger impact during busy times). There are also random fluctuations (minor delays) you don't want your model to overreact to.
+*   **Data:** You collect data over several months:
+    *   *Features:* Departure Time, Day of Week, Rain (yes/no), Temperature, Accident Reported (yes/no).
+    *   *Target Value:* Actual Commute Time (minutes).
+*   **SVR Solution:**
+    1.  **Training:** You train an SVR model using this historical data. You choose an RBF kernel to capture the non-linear interactions between time, weather, and traffic.
+    2.  **Epsilon (ε):** You set epsilon (ε) to, say, 3 minutes. This means the model won't be penalized if its prediction is within 3 minutes of the actual commute time. You accept that small variations are normal and unpredictable noise.
+    3.  **Support Vectors:** The model identifies the "critical" commutes – perhaps the exceptionally long ones due to accidents, the surprisingly fast ones on holidays, and those just on the edge of your +/- 3-minute tolerance. These become the support vectors.
+    4.  **Prediction:** Now, each morning, you input the current conditions (e.g., 8:00 AM, Tuesday, No Rain, 15°C, No Accident). The trained SVR model uses the learned function (defined by the support vectors and the kernel) to predict your commute time (e.g., 37 minutes). This prediction is based on the complex patterns learned, ignoring minor historical fluctuations within the 3-minute tube.
+
+**Why Use SVR and Not Normal Linear Regression or LWLR?**
+
+1.  **SVR vs. Normal Linear Regression:**
+    *   **Non-linearity:** Linear Regression assumes a strict linear relationship between features and the output. It would fail miserably at modeling the complex, non-linear effects of rush hour or the interaction between weather and time on commute time. SVR with non-linear kernels (like RBF) excels here.
+    *   **Sensitivity to Outliers:** Linear Regression minimizes the *sum of squared errors* for *all* points. A single very long commute (outlier) would heavily pull the regression line, potentially making predictions worse for typical days. SVR, due to its epsilon-insensitive tube, is inherently less sensitive to outliers (unless they are numerous or extreme enough to become support vectors defining the boundary far away). Points within the tube don't affect the model fit at all.
+
+2.  **SVR vs. Locally Weighted Linear Regression (LWLR):**
+    *   **Computational Cost:** LWLR is a non-parametric algorithm. To make *each* prediction, it essentially builds a *new* linear regression model weighted by the distance of training points to the *current query point*. This is computationally very expensive, especially for large datasets or real-time predictions. It also requires keeping the entire training dataset in memory.
+    *   **Model Sparsity:** SVR produces a *sparse* model. Once trained, the model is defined *only by the support vectors*, which are usually a small subset of the training data. Prediction is much faster as it only involves calculations with these support vectors. LWLR has no concept of support vectors; it always uses all (weighted) data for prediction.
+    *   **Global vs. Local:** While LWLR is great at capturing very local variations, SVR (especially with kernels) tries to find a more global structure (albeit potentially complex and non-linear) defined by the boundary points (support vectors), while offering robustness through the epsilon tube.
+
+**In Summary:**
+
+Use **SVR** when:
+
+*   You suspect **non-linear** relationships.
+*   You want **robustness to outliers** or noise within a certain tolerance (ε).
+*   You need an efficient prediction model after training (model defined by sparse support vectors).
+*   You are dealing with higher dimensional data where the kernel trick is advantageous.
+
+Avoid Linear Regression when data is non-linear or has significant outliers. Avoid LWLR when prediction speed is critical or memory is constrained due to large datasets.
